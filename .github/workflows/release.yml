@@ -100,6 +100,23 @@ jobs:
         with:
           channel: stable
 
+      - name: Configurar firma de release
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No hay secret ANDROID_KEYSTORE_BASE64 configurado: el APK saldrá firmado con la clave debug (puede chocar con instalaciones previas firmadas distinto)."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/agenda-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=agenda
+          storeFile=agenda-release.jks
+          EOF
+
       - run: flutter pub get
 
       - run: flutter build apk --release
