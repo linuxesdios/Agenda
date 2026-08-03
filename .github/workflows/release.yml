@@ -32,7 +32,13 @@ jobs:
         run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "agenda-windows-portable.zip"
 
       - name: Instalar Inno Setup
-        run: choco install innosetup -y --no-progress
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "choco install innosetup fallo con exit code $LASTEXITCODE"
+            exit 1
+          }
 
       - name: Determinar version a partir del tag
         id: version
@@ -47,11 +53,27 @@ jobs:
       - name: Compilar instalador con Inno Setup
         shell: pwsh
         run: |
-          $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" -ErrorAction Stop | Select-Object -First 1).FullName
-          $args = @("installer\agenda_setup.iss")
+          Write-Host "Buscando ISCC.exe..."
+          $encontrados = Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" -ErrorAction SilentlyContinue
+          if (-not $encontrados) {
+            Write-Host "No aparecio con el patron esperado. Contenido de las carpetas Program Files:"
+            Get-ChildItem "C:\Program Files*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host " - $($_.FullName)" }
+            Write-Error "No se encontro ISCC.exe tras instalar Inno Setup con choco."
+            exit 1
+          }
+          $iscc = $encontrados[0].FullName
+          Write-Host "Usando: $iscc"
+
+          $isccArgs = @("installer\agenda_setup.iss")
           $ver = "${{ steps.version.outputs.version }}"
-          if ($ver -ne "") { $args = @("/DMyAppVersion=$ver") + $args }
-          & $iscc @args
+          if ($ver -ne "") { $isccArgs = @("/DMyAppVersion=$ver") + $isccArgs }
+          Write-Host "Args: $isccArgs"
+
+          & $iscc @isccArgs
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "ISCC.exe fallo con exit code $LASTEXITCODE"
+            exit 1
+          }
 
       - uses: actions/upload-artifact@v4
         with:

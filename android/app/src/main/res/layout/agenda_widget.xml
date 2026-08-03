@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Layout del widget: cabecera teal (título + fecha + contador) + zona de contenido clara. -->
+<!-- Layout del widget: cabecera teal (título + fecha + contador) + zona de
+     contenido que se adapta a modo claro/oscuro (ver values(-night)/colors.xml). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -71,8 +72,8 @@
         android:layout_weight="1"
         android:paddingHorizontal="14dp"
         android:paddingVertical="10dp"
-        android:text="Cargando..."
-        android:textColor="#1A1A1A"
+        android:text="..."
+        android:textColor="@color/widget_text"
         android:textSize="16sp"
         android:lineSpacingExtra="4dp"
         android:maxLines="18"

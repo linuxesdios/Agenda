@@ -31,6 +31,15 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Minificación desactivada a propósito: WorkManager (usado por
+            // flutter_local_notifications) crashea al crear su base de datos
+            // Room ("Failed to create an instance of androidx.work.impl.WorkDatabase")
+            // cuando R8 renombra/elimina clases que necesita por reflexión y
+            // no hay reglas de keep propias. No es una app de Play Store donde
+            // el tamaño del APK importe, así que no vale la pena mantener
+            // reglas de ProGuard frágiles solo para ahorrar espacio.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

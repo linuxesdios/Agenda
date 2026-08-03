@@ -45,6 +45,16 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
             val hoy = widgetData.getString("hoy_widget", "") ?: ""
             val listas = widgetData.getString("listas_widget", "") ?: ""
 
+            // Títulos de sección, ya traducidos por Flutter (servicio_widget.dart).
+            // Los defaults en español son solo por si el widget se coloca antes
+            // de que la app llegue a escribir datos por primera vez.
+            val tituloCriticas = widgetData.getString("titulo_criticas_widget", "CRÍTICAS") ?: "CRÍTICAS"
+            val tituloCitas = widgetData.getString("titulo_citas_widget", "CITAS") ?: "CITAS"
+            val tituloHoy = widgetData.getString("titulo_hoy_widget", "HOY") ?: "HOY"
+            val tituloListas = widgetData.getString("titulo_listas_widget", "LISTAS") ?: "LISTAS"
+            val sinPendientes = widgetData.getString("sin_pendientes_widget", "Sin tareas ni citas 🎉")
+                ?: "Sin tareas ni citas 🎉"
+
             // ── Cabecera: título + fecha + píldora de pendientes ──
             views.setTextViewText(R.id.widget_titulo, titulo)
             views.setTextViewText(R.id.widget_fecha, fecha)
@@ -57,14 +67,14 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
 
             // ── Contenido: una sección por categoría activa, con su propio color ──
             val secciones = listOf(
-                Seccion("CRÍTICAS", criticas, 0xFFE53935.toInt()),
-                Seccion("CITAS", citas, 0xFF00897B.toInt()),
-                Seccion("HOY", hoy, 0xFF5E7CE2.toInt()),
-                Seccion("LISTAS", listas, 0xFF7C4DFF.toInt()),
+                Seccion(tituloCriticas, criticas, 0xFFE53935.toInt()),
+                Seccion(tituloCitas, citas, 0xFF00897B.toInt()),
+                Seccion(tituloHoy, hoy, 0xFF5E7CE2.toInt()),
+                Seccion(tituloListas, listas, 0xFF7C4DFF.toInt()),
             ).filter { it.contenido.isNotBlank() }
 
             val texto = if (secciones.isEmpty()) {
-                SpannableStringBuilder("Sin tareas ni citas 🎉")
+                SpannableStringBuilder(sinPendientes)
             } else {
                 val builder = SpannableStringBuilder()
                 secciones.forEachIndexed { i, seccion ->

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores del widget de pantalla de inicio. La cabecera (teal) es fija
+     en ambos temas; solo el fondo y el texto del contenido se adaptan. -->
+<resources>
+    <color name="widget_bg">#F5F5F5</color>
+    <color name="widget_text">#1A1A1A</color>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Variante oscura: se aplica sola cuando el sistema/launcher está en modo oscuro. -->
+<resources>
+    <color name="widget_bg">#242424</color>
+    <color name="widget_text">#EDEDED</color>
+</resources>

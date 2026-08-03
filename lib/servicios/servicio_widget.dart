@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:home_widget/home_widget.dart';
 import '../estado/agenda_estado.dart';
+import '../i18n/calendario_i18n.dart';
 
 /// Actualiza el widget de la pantalla de inicio de Android con un
 /// resumen de lo que hay que hacer hoy (como Google Tasks / Todoist).
@@ -25,12 +26,6 @@ class ServicioWidget {
   /// Máximo de listas personales a mostrar, y máximo de tareas por lista.
   static const _maxListas = 2;
   static const _maxTareasPorLista = 3;
-
-  static const _dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  static const _meses = [
-    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
-  ];
 
   /// Actualiza el widget con el estado actual de la agenda.
   static Future<void> actualizar(AgendaEstado estado) async {
@@ -112,8 +107,10 @@ class ServicioWidget {
       final totalPendiente =
           totalCitas + totalCriticas + totalHoy + totalListas;
       final titulo = '${estado.iconoApp}  ${estado.titulo}';
+      final diasSemana = CalendarioI18n.diasAbrev3(estado.idioma);
+      final meses = CalendarioI18n.mesesAbrev(estado.idioma);
       final fecha =
-          '${_dias[hoy.weekday - 1]} ${hoy.day} ${_meses[hoy.month - 1]}';
+          '${diasSemana[hoy.weekday - 1]} ${hoy.day} ${meses[hoy.month - 1]}';
 
       // ── Guardar y refrescar ──
       await HomeWidget.saveWidgetData<String>('titulo_widget', titulo);
@@ -123,6 +120,18 @@ class ServicioWidget {
       await HomeWidget.saveWidgetData<String>('criticas_widget', criticasTxt);
       await HomeWidget.saveWidgetData<String>('hoy_widget', hoyTxt);
       await HomeWidget.saveWidgetData<String>('listas_widget', listasTxt);
+      // Títulos de sección ya traducidos: el widget nativo (Kotlin) no tiene
+      // acceso al diccionario de Flutter, así que se los mandamos resueltos.
+      await HomeWidget.saveWidgetData<String>(
+          'titulo_criticas_widget', estado.t('widget.header_criticas'));
+      await HomeWidget.saveWidgetData<String>(
+          'titulo_citas_widget', estado.t('widget.header_citas'));
+      await HomeWidget.saveWidgetData<String>(
+          'titulo_hoy_widget', estado.t('widget.header_hoy'));
+      await HomeWidget.saveWidgetData<String>(
+          'titulo_listas_widget', estado.t('widget.header_listas'));
+      await HomeWidget.saveWidgetData<String>(
+          'sin_pendientes_widget', estado.t('widget.sin_pendientes'));
       await HomeWidget.updateWidget(androidName: _androidName);
     } catch (_) {
       // Si no hay widget colocado o falla, no bloquear la app
