@@ -131,6 +131,34 @@ This triggers `.github/workflows/release.yml`, which builds all 3 platforms and 
 
 > **Note:** the Linux job runs on `ubuntu-latest` but was never tested locally (no Linux available on the development machine). It's marked `continue-on-error`, so if it fails it won't block the Windows/Android release — but it isn't guaranteed to work until the first real run.
 
+## ☁️ Syncing between devices
+
+The app syncs data between your devices (work PC, home PC, phone, etc.) using a **private GitHub [Gist](https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists)** as storage — there's no custom backend or server: it's just a private text file in your GitHub account that the app reads and writes.
+
+### How it decides which version wins
+
+Every time it syncs (on app launch, every 15 minutes if there were changes, or with the manual 🔄 button), the app compares dates instead of blindly overwriting:
+
+- **If you have no unsynced local changes** → it only *reads*: if the cloud has something newer than the last time you synced, it pulls it.
+- **If you have unsynced local changes** → it compares the date of your change against the date of what's in the cloud, and **the most recent one wins**: if yours is newer, it gets uploaded; if the cloud has something later (e.g. uploaded from another device), your local change is discarded and that gets pulled instead.
+
+When you close the app, whatever you were editing gets uploaded directly (no comparison), because at that moment it's by definition your most recent version.
+
+> This covers normal use (you edit on one device at a time, and sync when switching to another). There's no "resolve conflict" screen for the rare case of editing both devices at once without syncing in between — in that case, whichever has the most recent timestamp wins, silently.
+
+### Setting up sync (once per device)
+
+1. **Create a GitHub account** if you don't have one yet: [github.com/join](https://github.com/join) (it's free).
+2. **Generate an access token** scoped *only* to Gists:
+   - Go to [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)
+   - **Generate new token** → give it a name, e.g. "Agenda"
+   - Under **Account permissions**, find **Gists** and set it to **Read and Write**
+   - Generate the token and copy it (starts with `github_pat_...`) — GitHub only shows it once
+3. **In the app**, go to Settings → Sync, paste the token, and tap **"Create gist"** (this automatically creates the private Gist and fills in the Gist ID).
+4. **On your other devices**, repeat step 3 but use **"Import"** instead of creating a new one: on the first device tap **"Export"** (copies token + Gist ID to the clipboard), and on the new device paste it with **"Import"** — that way they all point to the same Gist.
+
+The token is only stored locally on each device (never committed or shared); the Gist is private — only you can see it with your GitHub account.
+
 ## 🌍 Languages
 
 The app detects the system language on first launch and lets you change it from Settings → Appearance. Available languages: Spanish, English, Russian, Chinese.

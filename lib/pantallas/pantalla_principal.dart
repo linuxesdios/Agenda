@@ -21,7 +21,6 @@ import '../widgets/seccion_kanban.dart';
 import 'pantalla_ajustes.dart';
 import 'pantalla_papelera.dart';
 import 'pantalla_calendario.dart';
-import '../servicios/cliente_nube.dart';
 import 'package:window_manager/window_manager.dart';
 import '../widgets/dialogo_resumen_diario.dart';
 import '../i18n/calendario_i18n.dart';
@@ -506,52 +505,30 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
         MaterialPageRoute(builder: (_) => const SeccionKanban(esPopup: true)));
   }
 
+  /// Sincroniza con la nube usando la lógica central de [AgendaEstado]
+  /// ("gana el más reciente" — ver sincronizarAhora()), y muestra el
+  /// resultado en un snackbar.
   Future<void> _sincronizarManual(AgendaEstado estado) async {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
 
-    try {
-      final cred = await ClienteNube.leerCredenciales();
-      if (cred.token == null || cred.gistId == null ||
-          cred.token!.isEmpty || cred.gistId!.isEmpty) {
+    await estado.sincronizarAhora();
+    if (!mounted) return;
+
+    switch (estado.estadoSync) {
+      case EstadoSync.sincronizado:
         messenger.showSnackBar(
-            SnackBar(content: Text('⚠️ ${estado.t('principal.sync_configura_github')}')));
-        return;
-      }
-      final cliente = ClienteNube(token: cred.token!, gistId: cred.gistId!);
-
-      // 1. Bajar de la nube
-      messenger.showSnackBar(
-          SnackBar(content: Text('⬇️ ${estado.t('principal.sync_descargando')}'), duration: const Duration(seconds: 1)));
-      final resultado = await cliente.descargar();
-      final jsonNube = resultado.contenido;
-      final tsNube = resultado.fechaModificacion;
-
-      // 2. Comparar con lo local
-      final jsonLocal = estado.exportarAJsonSync();
-      final nubeLen = jsonNube.length;
-
-      // 3. Si la nube tiene datos y es diferente, importar
-      if (tsNube > 0 && jsonNube != jsonLocal) {
-        await estado.importarDeJson(jsonNube);
-        if (!mounted) return;
+            SnackBar(content: Text('✅ ${estado.t('principal.sync_completado')}')));
+      case EstadoSync.desactivado:
         messenger.showSnackBar(SnackBar(
-          content: Text('⬇️ ${estado.t('principal.sync_descargado').replaceAll('{kb}', (nubeLen / 1024).toStringAsFixed(1))}'),
-          duration: const Duration(seconds: 2),
-        ));
-      }
-
-      // 4. Subir lo local (puede tener cambios nuevos post-import)
-      final jsonSubir = estado.exportarAJsonSync();
-      await cliente.subir(jsonSubir);
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(
-        content: Text('⬆️ ${estado.t('principal.sync_subido').replaceAll('{kb}', (jsonSubir.length / 1024).toStringAsFixed(1))}'),
-        duration: const Duration(seconds: 2),
-      ));
-    } catch (e) {
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('❌ ${estado.t('principal.sync_error').replaceAll('{error}', '$e')}')));
+            content: Text('⚠️ ${estado.t('principal.sync_configura_github')}')));
+      case EstadoSync.error:
+        messenger.showSnackBar(SnackBar(
+            content: Text('❌ ${estado.t('principal.error_sincronizacion')}')));
+      case EstadoSync.subiendo:
+      case EstadoSync.pendiente:
+      case EstadoSync.sinConexion:
+        break;
     }
   }
 

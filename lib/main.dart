@@ -6,7 +6,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 import 'servicios/servicio_notificaciones.dart';
 import 'servicios/servicio_widget.dart';
-import 'servicios/cliente_nube.dart';
 import 'repositorios/almacenamiento_sqlite.dart';
 import 'estado/agenda_estado.dart';
 import 'modelos/configuracion.dart';
@@ -54,38 +53,30 @@ void main() async {
       datos = DatosAgenda();
     }
 
-    // Descargar de la nube al arrancar
+    final estado = AgendaEstado(
+      repositorio: repositorio,
+      datosIniciales: datos,
+    );
+    await estado.asegurarIdiomaDetectado();
+
+    // Sincronizar con la nube al arrancar (lee el .db ANTES de que la
+    // limpieza de citas pasadas lo modifique, para que la comparación de
+    // fechas de sincronizarAhora() refleje ediciones reales del usuario,
+    // no el auto-purge de más abajo).
     try {
-      final cred = await ClienteNube.leerCredenciales();
-      if (cred.token != null &&
-          cred.gistId != null &&
-          cred.token!.isNotEmpty &&
-          cred.gistId!.isNotEmpty) {
-        log('Descargando de la nube...');
-        final cliente =
-            ClienteNube(token: cred.token!, gistId: cred.gistId!);
-        final resultado = await cliente.descargar();
-        if (resultado.fechaModificacion > 0) {
-          final miConfig = datos.configuracion;
-          await repositorio.importarDeJson(resultado.contenido);
-          datos = await repositorio.cargarTodo();
-          datos.configuracion = miConfig;
-          await repositorio.guardarTodo(datos);
-          log('Datos de la nube aplicados');
-        }
-      }
+      log('Sincronizando al arrancar...');
+      await estado.sincronizarAhora();
+      log('Sync al arrancar: ${estado.estadoSync}');
     } catch (e) {
       log('Sync al arrancar no disponible: $e');
     }
 
-    // Borrar citas pasadas automáticamente
+    // Borrar citas pasadas automáticamente (después de aplicar la nube,
+    // para no purgar citas que en realidad venían actualizadas de otro
+    // dispositivo).
     try {
-      final citasPasadas = datos.citas.where((c) => c.haPasado).toList();
-      if (citasPasadas.isNotEmpty) {
-        datos.citas.removeWhere((c) => c.haPasado);
-        await repositorio.guardarTodo(datos);
-        log('Borradas ${citasPasadas.length} citas pasadas');
-      }
+      final borradas = await estado.borrarCitasPasadas();
+      if (borradas > 0) log('Borradas $borradas citas pasadas');
     } catch (e) {
       log('Error borrando citas pasadas: $e');
     }
@@ -93,18 +84,13 @@ void main() async {
     // Inicializar notificaciones
     try {
       await ServicioNotificaciones.inicializar();
-      await ServicioNotificaciones.reprogramarTodas(datos.citas);
+      await ServicioNotificaciones.reprogramarTodas(estado.citas);
       log('Notificaciones OK');
     } catch (e) {
       log('Notificaciones no disponibles: $e');
     }
 
     log('Lanzando runApp...');
-    final estado = AgendaEstado(
-      repositorio: repositorio,
-      datosIniciales: datos,
-    );
-    await estado.asegurarIdiomaDetectado();
 
     // Refrescar el widget de Android al arrancar
     try {

@@ -131,6 +131,34 @@ Esto dispara `.github/workflows/release.yml`, que compila las 3 plataformas y pu
 
 > **Nota:** el job de Linux corre en `ubuntu-latest` pero nunca se probó localmente (no hay Linux disponible en la máquina de desarrollo). Está marcado `continue-on-error`, así que si falla no bloquea el release de Windows/Android — pero no está garantizado que funcione hasta la primera corrida real.
 
+## ☁️ Sincronización entre dispositivos
+
+La app sincroniza datos entre tus dispositivos (PC del trabajo, PC de casa, celular, etc.) usando un **[Gist](https://docs.github.com/es/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists) privado de GitHub** como almacenamiento — no hay backend propio ni servidor: es solo un archivo de texto privado en tu cuenta de GitHub que la app lee y escribe.
+
+### Cómo decide qué versión gana
+
+Cada vez que sincroniza (al abrir la app, cada 15 minutos si hubo cambios, o con el botón manual 🔄), la app compara fechas en vez de sobreescribir a ciegas:
+
+- **Si no tenés cambios locales sin subir** → solo *lee*: si la nube tiene algo más nuevo que la última vez que sincronizaste, lo trae.
+- **Si tenés cambios locales sin subir** → compara la fecha de tu cambio contra la fecha de lo que hay en la nube, y **gana el más reciente**: si lo tuyo es más nuevo, se sube; si la nube tiene algo posterior (por ejemplo, subido desde otro dispositivo), se descarta tu cambio local y se trae eso.
+
+Al cerrar la app, lo que estabas editando se sube directo (sin comparar), porque en ese momento es por definición tu versión más reciente.
+
+> Esto cubre el uso normal (editás en un dispositivo por vez, y sincronizás al pasar a otro). No hay una pantalla de "resolver conflicto" para el caso raro de editar los dos dispositivos a la vez sin sincronizar entre medio — en ese caso gana el que tenga la fecha más reciente, sin avisar.
+
+### Configurar la sincronización (una vez por dispositivo)
+
+1. **Creá una cuenta de GitHub** si todavía no tenés una: [github.com/join](https://github.com/join) (es gratis).
+2. **Generá un token de acceso** con permiso *solo* para Gists:
+   - Andá a [github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)
+   - **Generate new token** → poné un nombre, por ejemplo "Agenda"
+   - En **Account permissions**, buscá **Gists** y poné **Read and Write**
+   - Generá el token y copialo (empieza con `github_pat_...`) — GitHub solo lo muestra una vez
+3. **En la app**, andá a Ajustes → Sincronización, pegá el token, y tocá **"Crear gist"** (esto crea el Gist privado automáticamente y completa el Gist ID).
+4. **En tus otros dispositivos**, repetí el paso 3 pero usando **"Importar"** en vez de crear uno nuevo: en el primer dispositivo tocá **"Exportar"** (copia token + Gist ID al portapapeles), y en el dispositivo nuevo pegalo con **"Importar"** — así todos apuntan al mismo Gist.
+
+El token queda guardado solo localmente en cada dispositivo (nunca se commitea ni se comparte); el Gist es privado, solo vos podés verlo con tu cuenta de GitHub.
+
 ## 🌍 Idiomas
 
 La app detecta el idioma del sistema en el primer arranque y permite cambiarlo desde Ajustes → Apariencia. Idiomas disponibles: Español, English, Русский, 中文.
