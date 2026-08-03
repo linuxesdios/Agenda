@@ -54,6 +54,7 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
             val tituloListas = widgetData.getString("titulo_listas_widget", "LISTAS") ?: "LISTAS"
             val sinPendientes = widgetData.getString("sin_pendientes_widget", "Sin tareas ni citas 🎉")
                 ?: "Sin tareas ni citas 🎉"
+            val fondoNegro = widgetData.getString("fondo_negro_widget", "0") == "1"
 
             // ── Cabecera: título + fecha + píldora de pendientes ──
             views.setTextViewText(R.id.widget_titulo, titulo)
@@ -97,6 +98,14 @@ class AgendaWidgetProvider : HomeWidgetProvider() {
                 builder
             }
             views.setTextViewText(R.id.widget_contenido, texto)
+
+            // ── Fondo negro puro (OLED), si está activado en Ajustes ──
+            // Sin esto, el fondo/texto se adaptan solos claro/oscuro vía
+            // los recursos values(-night)/colors.xml declarados en el layout.
+            if (fondoNegro) {
+                views.setInt(R.id.widget_root, "setBackgroundResource", R.drawable.widget_background_negro)
+                views.setTextColor(R.id.widget_contenido, 0xFFFFFFFF.toInt())
+            }
 
             // ── Al tocar el widget, abrir la app ──
             val abrirApp = HomeWidgetLaunchIntent.getActivity(

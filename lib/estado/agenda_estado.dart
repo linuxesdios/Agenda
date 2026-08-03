@@ -137,6 +137,8 @@ class AgendaEstado extends ChangeNotifier {
   bool get widgetMostrarCitas => _datos.configuracion.widgetMostrarCitas;
   bool get widgetMostrarHoy => _datos.configuracion.widgetMostrarHoy;
   bool get widgetMostrarListas => _datos.configuracion.widgetMostrarListas;
+  bool get widgetFondoNegro => _datos.configuracion.widgetFondoNegro;
+  int get widgetMaxItems => _datos.configuracion.widgetMaxItems;
 
   // ═══════════════════════════════════════════
   // PERSISTENCIA + SYNC AUTOMÁTICA
@@ -165,11 +167,30 @@ class AgendaEstado extends ChangeNotifier {
     }
   }
 
+  /// Fuerza una sincronización inmediata, con la misma lógica de
+  /// "gana el más reciente" que el auto-sync (ver [_ejecutarSync]).
+  /// La usan el botón manual de sincronizar y el arranque de la app.
+  Future<void> sincronizarAhora() => _ejecutarSync();
+
+  /// Sincroniza con la nube comparando fechas — nunca sobreescribe a ciegas.
+  ///
+  /// Lógica ("gana el más reciente"):
+  ///   1. Si NO tengo cambios locales pendientes → solo LEO: si la nube
+  ///      tiene algo más nuevo que mi último sync conocido, lo aplico.
+  ///   2. Si SÍ tengo cambios locales pendientes → comparo la fecha de mi
+  ///      cambio (mtime del .db) contra el lastModified de la nube:
+  ///      - Si el mío es más nuevo → ESCRIBO (subo).
+  ///      - Si el de la nube es más nuevo → pierdo mi cambio local y bajo
+  ///        el de la nube (otro dispositivo sincronizó después que yo).
+  ///
+  /// El guardado al cerrar la app (forzarGuardadoYSync) NO pasa por acá:
+  /// ese siempre sube directo, sin comparar, porque cerrar la app implica
+  /// que ese es tu cambio más reciente en ese momento.
   Future<void> _ejecutarSync() async {
     if (_syncEnCurso) return;
     if (_repositorio is! AlmacenamientoSqlite) return;
+    final repo = _repositorio;
 
-    // Leer credenciales
     final cred = await ClienteNube.leerCredenciales();
     if (cred.token == null || cred.gistId == null ||
         cred.token!.isEmpty || cred.gistId!.isEmpty) {
@@ -183,9 +204,33 @@ class AgendaEstado extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final json = await _repositorio.exportarAJson();
       final cliente = ClienteNube(token: cred.token!, gistId: cred.gistId!);
-      await cliente.subir(json);
+      final resultado = await cliente.descargar();
+      final tsNube = resultado.fechaModificacion;
+      final tengoCambiosPendientes = await repo.hayCambiosPendientes();
+
+      if (!tengoCambiosPendientes) {
+        // Nada para subir: solo aplico la nube si trae algo más nuevo.
+        final tsUltimoSync = await repo.leerTimestampSync();
+        if (tsNube > tsUltimoSync) {
+          await importarDeJson(resultado.contenido);
+          await repo.guardarTimestampSync(tsNube);
+        }
+      } else {
+        final tsLocal = await repo.dbLastModifiedMs() ?? 0;
+        if (tsNube > tsLocal) {
+          // La nube tiene algo más nuevo que mi cambio local pendiente.
+          await importarDeJson(resultado.contenido);
+          await repo.guardarTimestampSync(tsNube);
+        } else {
+          // Mi cambio local es el más nuevo: lo subo.
+          final json = await repo.exportarAJson();
+          await cliente.subir(json);
+          await repo.guardarTimestampSync(
+              DateTime.now().toUtc().millisecondsSinceEpoch);
+        }
+      }
+
       estadoSync = EstadoSync.sincronizado;
       ultimaSync = DateTime.now();
       _hayCambiosLocales = false;
@@ -568,6 +613,18 @@ class AgendaEstado extends ChangeNotifier {
     await _guardar();
   }
 
+  Future<void> cambiarWidgetFondoNegro(bool valor) async {
+    _datos.configuracion.widgetFondoNegro = valor;
+    notifyListeners();
+    await _guardar();
+  }
+
+  Future<void> cambiarWidgetMaxItems(int valor) async {
+    _datos.configuracion.widgetMaxItems = valor.clamp(2, 8);
+    notifyListeners();
+    await _guardar();
+  }
+
   Future<void> cambiarRecordatoriosPorDefecto(List<int> valores) async {
     _datos.configuracion.recordatoriosPorDefecto = valores;
     notifyListeners();
@@ -863,9 +920,32 @@ class AgendaEstado extends ChangeNotifier {
 
   // ═══════════════════════════════════════════
   /// Fuerza guardado en SQLite y subida inmediata a la nube (para cierre de app).
+  /// A propósito NO pasa por la comparación de fechas de [_ejecutarSync]:
+  /// si estás cerrando la app después de editar, ese es por definición tu
+  /// cambio más reciente, así que se sube directo.
   Future<void> forzarGuardadoYSync() async {
     await _repositorio.guardarTodo(_datos);
-    await _ejecutarSync();
+    await _subirDirecto();
+  }
+
+  /// Sube lo local a la nube sin comparar fechas. Usado solo al cerrar la app.
+  Future<void> _subirDirecto() async {
+    if (_repositorio is! AlmacenamientoSqlite) return;
+    final repo = _repositorio;
+    final cred = await ClienteNube.leerCredenciales();
+    if (cred.token == null || cred.gistId == null ||
+        cred.token!.isEmpty || cred.gistId!.isEmpty) {
+      return;
+    }
+    try {
+      final json = await repo.exportarAJson();
+      final cliente = ClienteNube(token: cred.token!, gistId: cred.gistId!);
+      await cliente.subir(json);
+      await repo.guardarTimestampSync(
+          DateTime.now().toUtc().millisecondsSinceEpoch);
+    } catch (_) {
+      // Cerrar la app no debe bloquearse ni fallar por un error de red.
+    }
   }
 
   // SYNC — EXPORT / IMPORT

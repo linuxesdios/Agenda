@@ -90,6 +90,12 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
       'frases': "TEXT DEFAULT ''",
       'resumen_diario': 'INTEGER DEFAULT 1',
       'idioma': 'TEXT',
+      'widget_mostrar_criticas': 'INTEGER DEFAULT 1',
+      'widget_mostrar_citas': 'INTEGER DEFAULT 1',
+      'widget_mostrar_hoy': 'INTEGER DEFAULT 1',
+      'widget_mostrar_listas': 'INTEGER DEFAULT 0',
+      'widget_fondo_negro': 'INTEGER DEFAULT 0',
+      'widget_max_items': 'INTEGER DEFAULT 3',
     };
     for (final e in requeridas.entries) {
       if (!nombres.contains(e.key)) {
@@ -114,6 +120,12 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
       'frases': "TEXT DEFAULT ''",
       'resumen_diario': 'INTEGER DEFAULT 1',
       'idioma': 'TEXT',
+      'widget_mostrar_criticas': 'INTEGER DEFAULT 1',
+      'widget_mostrar_citas': 'INTEGER DEFAULT 1',
+      'widget_mostrar_hoy': 'INTEGER DEFAULT 1',
+      'widget_mostrar_listas': 'INTEGER DEFAULT 0',
+      'widget_fondo_negro': 'INTEGER DEFAULT 0',
+      'widget_max_items': 'INTEGER DEFAULT 3',
     };
     for (final entry in columnasRequeridas.entries) {
       if (!nombres.contains(entry.key)) {
@@ -157,7 +169,13 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         icono_app TEXT DEFAULT '📋',
         frases TEXT DEFAULT '',
         resumen_diario INTEGER DEFAULT 1,
-        idioma TEXT
+        idioma TEXT,
+        widget_mostrar_criticas INTEGER DEFAULT 1,
+        widget_mostrar_citas INTEGER DEFAULT 1,
+        widget_mostrar_hoy INTEGER DEFAULT 1,
+        widget_mostrar_listas INTEGER DEFAULT 0,
+        widget_fondo_negro INTEGER DEFAULT 0,
+        widget_max_items INTEGER DEFAULT 3
       )
     ''');
 
@@ -309,6 +327,13 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         frases: r['frases'] as String? ?? '',
         resumenDiario: (r['resumen_diario'] as int? ?? 1) == 1,
         idioma: r['idioma'] as String?,
+        widgetMostrarCriticas:
+            (r['widget_mostrar_criticas'] as int? ?? 1) == 1,
+        widgetMostrarCitas: (r['widget_mostrar_citas'] as int? ?? 1) == 1,
+        widgetMostrarHoy: (r['widget_mostrar_hoy'] as int? ?? 1) == 1,
+        widgetMostrarListas: (r['widget_mostrar_listas'] as int? ?? 0) == 1,
+        widgetFondoNegro: (r['widget_fondo_negro'] as int? ?? 0) == 1,
+        widgetMaxItems: r['widget_max_items'] as int? ?? 3,
       );
     } else {
       config = Configuracion(dispositivoNombre: dispositivoId);
@@ -506,6 +531,12 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         'frases': c.frases,
         'resumen_diario': c.resumenDiario ? 1 : 0,
         'idioma': c.idioma,
+        'widget_mostrar_criticas': c.widgetMostrarCriticas ? 1 : 0,
+        'widget_mostrar_citas': c.widgetMostrarCitas ? 1 : 0,
+        'widget_mostrar_hoy': c.widgetMostrarHoy ? 1 : 0,
+        'widget_mostrar_listas': c.widgetMostrarListas ? 1 : 0,
+        'widget_fondo_negro': c.widgetFondoNegro ? 1 : 0,
+        'widget_max_items': c.widgetMaxItems,
       });
 
       // ── Limpiar datos compartidos ──
@@ -734,13 +765,21 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
   Future<bool> hayCambiosPendientes() async {
     final tsSync = await leerTimestampSync();
     if (tsSync == 0) return true; // Nunca sincronizado
+    final tsLocal = await dbLastModifiedMs();
+    if (tsLocal == null) return true;
+    return tsLocal > tsSync;
+  }
+
+  /// Timestamp UTC (ms) de la última modificación del archivo .db local.
+  /// Se usa para saber "cuándo" fue mi último cambio local, y compararlo
+  /// contra el `lastModified` que trae la nube para decidir quién gana.
+  Future<int?> dbLastModifiedMs() async {
     final db = await _abrir();
-    final ruta = db.path;
     try {
-      final stat = await File(ruta).stat();
-      return stat.modified.toUtc().millisecondsSinceEpoch > tsSync;
+      final stat = await File(db.path).stat();
+      return stat.modified.toUtc().millisecondsSinceEpoch;
     } catch (_) {
-      return true;
+      return null;
     }
   }
 

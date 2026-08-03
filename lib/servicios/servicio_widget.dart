@@ -11,27 +11,26 @@ import '../i18n/calendario_i18n.dart';
 ///   → HomeWidget.updateWidget → Android redibuja el widget
 ///     leyendo esos datos en AgendaWidgetProvider.kt
 ///
-/// Qué secciones se muestran es configurable desde Ajustes
+/// Qué secciones se muestran, cuántos elementos por sección, y si el fondo
+/// es negro puro (OLED), es todo configurable desde Ajustes
 /// (estado.widgetMostrarCriticas / widgetMostrarCitas / widgetMostrarHoy /
-/// widgetMostrarListas).
+/// widgetMostrarListas / widgetMaxItems / widgetFondoNegro).
 ///
 /// Solo funciona en Android. En Windows no hace nada.
 class ServicioWidget {
   /// Nombre de la clase Kotlin del widget (debe coincidir exactamente).
   static const _androidName = 'AgendaWidgetProvider';
 
-  /// Máximo de líneas por sección para no saturar el widget.
-  static const _maxPorSeccion = 3;
-
-  /// Máximo de listas personales a mostrar, y máximo de tareas por lista.
+  /// Máximo de listas personales a mostrar (independiente de widgetMaxItems,
+  /// que controla cuántos ITEMS por sección, no cuántas listas).
   static const _maxListas = 2;
-  static const _maxTareasPorLista = 3;
 
   /// Actualiza el widget con el estado actual de la agenda.
   static Future<void> actualizar(AgendaEstado estado) async {
     if (!Platform.isAndroid) return;
 
     try {
+      final maxPorSeccion = estado.widgetMaxItems;
       final hoy = DateTime.now();
       final fechaStr =
           '${hoy.year}-${hoy.month.toString().padLeft(2, '0')}-${hoy.day.toString().padLeft(2, '0')}';
@@ -43,7 +42,7 @@ class ServicioWidget {
         final citas = estado.citasDelDia(fechaStr);
         totalCitas = citas.length;
         citasTxt = citas
-            .take(_maxPorSeccion)
+            .take(maxPorSeccion)
             .map((c) => '🕐 ${c.hora}  ${c.descripcion}')
             .join('\n');
       }
@@ -56,7 +55,7 @@ class ServicioWidget {
             estado.tareasCriticas.where((t) => !t.completada).toList();
         totalCriticas = criticas.length;
         criticasTxt = criticas
-            .take(_maxPorSeccion)
+            .take(maxPorSeccion)
             .map((t) => '🔴 ${t.titulo}')
             .join('\n');
       }
@@ -72,7 +71,7 @@ class ServicioWidget {
             .toList();
         totalHoy = tareasHoy.length;
         hoyTxt = tareasHoy
-            .take(_maxPorSeccion)
+            .take(maxPorSeccion)
             .map((t) => '●  ${t.titulo}')
             .join('\n');
       }
@@ -92,10 +91,10 @@ class ServicioWidget {
           if (bloques.length >= _maxListas) continue;
 
           final tareasTxt = pendientes
-              .take(_maxTareasPorLista)
+              .take(maxPorSeccion)
               .map((t) => '   ‣ ${t.titulo}')
               .join('\n');
-          final resto = pendientes.length - _maxTareasPorLista;
+          final resto = pendientes.length - maxPorSeccion;
           final bloque = resto > 0
               ? '${lista.emoji} ${lista.nombre}\n$tareasTxt\n   … y $resto más'
               : '${lista.emoji} ${lista.nombre}\n$tareasTxt';
@@ -132,6 +131,8 @@ class ServicioWidget {
           'titulo_listas_widget', estado.t('widget.header_listas'));
       await HomeWidget.saveWidgetData<String>(
           'sin_pendientes_widget', estado.t('widget.sin_pendientes'));
+      await HomeWidget.saveWidgetData<String>(
+          'fondo_negro_widget', estado.widgetFondoNegro ? '1' : '0');
       await HomeWidget.updateWidget(androidName: _androidName);
     } catch (_) {
       // Si no hay widget colocado o falla, no bloquear la app

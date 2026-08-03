@@ -43,6 +43,8 @@ class Configuracion {
     this.widgetMostrarCitas = true,
     this.widgetMostrarHoy = true,
     this.widgetMostrarListas = false,
+    this.widgetFondoNegro = false,
+    this.widgetMaxItems = 3,
   });
 
   /// Si true, muestra un popup con el resumen del día al abrir la app.
@@ -57,6 +59,14 @@ class Configuracion {
   bool widgetMostrarCitas;
   bool widgetMostrarHoy;
   bool widgetMostrarListas;
+
+  /// Fondo negro puro (mejor para pantallas OLED) en vez del claro/oscuro
+  /// que se adapta solo al tema del sistema.
+  bool widgetFondoNegro;
+
+  /// Cuántos elementos como máximo mostrar por sección en el widget.
+  /// Rango: 2-8.
+  int widgetMaxItems;
 
   static const _defaultFrases =
       'El éxito es la suma de pequeños esfuerzos repetidos día tras día\n'
@@ -124,6 +134,8 @@ class Configuracion {
         'widgetMostrarCitas': widgetMostrarCitas,
         'widgetMostrarHoy': widgetMostrarHoy,
         'widgetMostrarListas': widgetMostrarListas,
+        'widgetFondoNegro': widgetFondoNegro,
+        'widgetMaxItems': widgetMaxItems,
       };
 
   factory Configuracion.fromJson(Map<String, dynamic> json) => Configuracion(
@@ -147,6 +159,8 @@ class Configuracion {
         widgetMostrarCitas: json['widgetMostrarCitas'] as bool? ?? true,
         widgetMostrarHoy: json['widgetMostrarHoy'] as bool? ?? true,
         widgetMostrarListas: json['widgetMostrarListas'] as bool? ?? false,
+        widgetFondoNegro: json['widgetFondoNegro'] as bool? ?? false,
+        widgetMaxItems: json['widgetMaxItems'] as int? ?? 3,
       );
 }
 
