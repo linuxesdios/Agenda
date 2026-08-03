@@ -1,0 +1,69 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# --- Especifico de este repo ---
+
+# Herramienta de versionado/backup casera (no es git, se mantiene solo en disco local)
+/.mivcs/
+
+# Salidas de build manuales / backups legacy con binarios (no se versionan; usar GitHub Releases)
+/compilado/
+/compilado.zip
+/compiladoultima.zip
+/multima.zip
+/ojkpoj.zip
+
+# Instalador generado por Inno Setup (se genera con installer/agenda_setup.iss, no se versiona)
+/installer/Output/
+
+# Logs locales
+agenda_log.txt
+
+# Companion web (PWA con Supabase) — proyecto aparte, fuera de este repo por ahora
+/AgendaGitSyncro/
+
+# Config local de Claude Code (permisos específicos de esta máquina)
+.claude/

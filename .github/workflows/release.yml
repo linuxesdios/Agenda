@@ -1,0 +1,139 @@
+name: Build & Release
+
+# Se dispara al pushear un tag vX.Y.Z (crea un Release en GitHub con los
+# binarios) o manualmente desde la pestaña Actions (solo compila y sube
+# los artifacts, sin publicar Release, para poder probar el build sin
+# cortar una versión).
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows (instalador + portable)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter build windows --release
+
+      - name: Empaquetar build portable (zip)
+        run: Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "agenda-windows-portable.zip"
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Determinar version a partir del tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilar instalador con Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" -ErrorAction Stop | Select-Object -First 1).FullName
+          $args = @("installer\agenda_setup.iss")
+          $ver = "${{ steps.version.outputs.version }}"
+          if ($ver -ne "") { $args = @("/DMyAppVersion=$ver") + $args }
+          & $iscc @args
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agenda-windows-installer
+          path: installer\Output\AgendaSetup.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agenda-windows-portable
+          path: agenda-windows-portable.zip
+
+  android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agenda-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  linux:
+    name: Linux (bundle, best-effort)
+    runs-on: ubuntu-latest
+    # No probado localmente (no hay Linux disponible en el entorno de desarrollo).
+    # Si falla, no debe tumbar el release de Windows/Android.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Instalar dependencias de build de Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - run: flutter pub get
+
+      - run: flutter build linux --release
+
+      - name: Empaquetar bundle (tar.gz)
+        run: tar -czf agenda-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agenda-linux-bundle
+          path: agenda-linux-x64.tar.gz
+
+  release:
+    name: Publicar Release en GitHub
+    needs: [windows, android, linux]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && (needs.windows.result == 'success' || needs.android.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Listar artifacts descargados
+        run: find artifacts -type f
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false

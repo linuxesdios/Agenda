@@ -1,0 +1,123 @@
+# 📋 Agenda
+
+Agenda personal multiplataforma hecha con Flutter: calendario, tareas en formato Kanban, notas, marcadores, contraseñas cifradas, Pomodoro, plantillas y sincronización entre dispositivos vía GitHub Gist privado.
+
+<!-- Reemplazá linuxesdios por tu usuario/organización de GitHub antes de publicar -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Build & Release](https://github.com/linuxesdios/agenda/actions/workflows/release.yml/badge.svg)](https://github.com/linuxesdios/agenda/actions/workflows/release.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.12-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Android%20%7C%20Linux-informational)](#compilar-desde-el-c%C3%B3digo-fuente)
+
+## ✨ Funcionalidades
+
+- 📅 Calendario y vista semanal de citas
+- ✅ Tareas en tablero Kanban, con criticidad y recordatorios
+- 📝 Notas rápidas ("brain dump")
+- 🔖 Marcadores / enlaces guardados
+- 🔐 Gestor de contraseñas cifrado (`cryptography`)
+- 🍅 Temporizador Pomodoro
+- 🧩 Plantillas y listas personalizadas
+- ☁️ Sincronización entre dispositivos vía GitHub Gist privado
+- 🔔 Notificaciones locales programadas
+- 🖥️ Widget de pantalla de inicio en Android
+- 🌗 Modo oscuro, paletas de color e idioma configurables
+
+## 📂 Estructura del proyecto
+
+Es un único proyecto Flutter: todo el código de la aplicación vive en [lib/](lib/) y se compila para cada plataforma usando las carpetas estándar que genera el propio Flutter (`android/`, `ios/`, `linux/`, `macos/`, `web/`, `windows/`). No son subproyectos independientes — comparten el 100% de la lógica y la interfaz.
+
+```
+lib/
+├── main.dart          # arranque, tema, ciclo de vida de ventana
+├── modelos/           # entidades de datos (Cita, Tarea, Configuracion, ...)
+├── estado/            # estado global de la app (Provider/ChangeNotifier)
+├── repositorios/      # persistencia (SQLite y JSON) y su interfaz común
+├── servicios/         # notificaciones, cifrado, widget de Android, sync a la nube
+├── pantallas/         # pantallas principales
+└── widgets/           # componentes y diálogos reutilizables
+
+android/ ios/ linux/ macos/ web/ windows/   # shells nativos generados por Flutter
+installer/             # script de Inno Setup para el instalador de Windows
+```
+
+## 🔨 Compilar desde el código fuente
+
+Requisitos comunes: [Flutter SDK](https://docs.flutter.dev/get-started/install) ≥ 3.12 en el PATH, y `flutter pub get` corrido una vez en la raíz del repo.
+
+```bash
+git clone https://github.com/linuxesdios/agenda.git
+cd agenda
+flutter pub get
+```
+
+### Windows
+
+Requiere Visual Studio 2022 con la carga de trabajo **"Desarrollo para el escritorio con C++"**.
+
+```powershell
+flutter build windows --release
+```
+
+Resultado: `build\windows\x64\runner\Release\agenda.exe` (+ DLLs necesarias en la misma carpeta).
+
+Para generar el instalador `.exe` (requiere [Inno Setup](https://jrsoftware.org/isinfo.php) 6 o superior):
+
+```powershell
+"C:\Program Files\Inno Setup 7\ISCC.exe" installer\agenda_setup.iss
+```
+
+Resultado: `installer\Output\AgendaSetup.exe`.
+
+### Android
+
+Requiere Android SDK (vía Android Studio) y `flutter.sdk` / `sdk.dir` configurados (Flutter genera `android/local.properties` automáticamente en el primer build; ese archivo es local a tu máquina y no se versiona).
+
+```bash
+flutter build apk --release
+```
+
+Resultado: `build/app/outputs/flutter-apk/app-release.apk`.
+
+### Linux
+
+Requiere las dependencias de desarrollo de GTK 3 (`libgtk-3-dev`, `cmake`, `ninja-build`, `clang`).
+
+```bash
+flutter build linux --release
+```
+
+Resultado: `build/linux/x64/release/bundle/` (carpeta completa; `agenda` es el ejecutable).
+
+### macOS / iOS / Web
+
+Las carpetas `macos/`, `ios/` y `web/` están presentes (generadas por Flutter) pero no se compilan ni se prueban de forma regular en este proyecto. Deberían funcionar con los comandos estándar (`flutter build macos`, `flutter build ios`, `flutter build web`), pero no hay garantía — si encontrás problemas, son bienvenidos los issues/PRs.
+
+## ⬇️ Descargar versión ya compilada
+
+No hace falta compilar nada: cada [Release](https://github.com/linuxesdios/agenda/releases) trae los binarios ya generados por CI.
+
+| Plataforma | Archivo a bajar | Qué es |
+|---|---|---|
+| 🪟 Windows | `AgendaSetup.exe` | Instalador (recomendado) — crea accesos directos y desinstalador |
+| 🪟 Windows | `agenda-windows-portable.zip` | Carpeta portable, sin instalar — descomprimir y ejecutar `agenda.exe` |
+| 🤖 Android | `app-release.apk` | Instalá habilitando "orígenes desconocidos" en el teléfono |
+| 🐧 Linux | `agenda-linux-x64.tar.gz` | Bundle portable (best-effort, ver nota abajo) — descomprimir y ejecutar `agenda` |
+
+### Generar un release nuevo
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Esto dispara `.github/workflows/release.yml`, que compila las 3 plataformas y publica el Release automáticamente con los binarios adjuntos. También se puede correr manualmente desde la pestaña **Actions → Build & Release → Run workflow** (no publica un Release, solo deja los artifacts para verificar que el build funciona).
+
+> **Nota:** el job de Linux corre en `ubuntu-latest` pero nunca se probó localmente (no hay Linux disponible en la máquina de desarrollo). Está marcado `continue-on-error`, así que si falla no bloquea el release de Windows/Android — pero no está garantizado que funcione hasta la primera corrida real.
+
+## 🌍 Idiomas
+
+La app detecta el idioma del sistema en el primer arranque y permite cambiarlo desde Ajustes. Idiomas disponibles: Español, English, Русский, 中文.
+
+## 📄 Licencia
+
+Este proyecto está bajo licencia [MIT](LICENSE).
