@@ -32,6 +32,13 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# El plugin flutter_local_notifications_windows (versión vieja, 1.0.3) usa
+# <experimental/coroutine>, que el STL de versiones nuevas de MSVC (VS 2026+
+# en los runners de GitHub Actions) trata como error duro en vez de warning.
+# Silenciarlo es el workaround oficial hasta que el plugin actualice su
+# código C++; no afecta al resto del proyecto.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
