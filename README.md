@@ -1,3 +1,7 @@
+<div align="center">
+
+**[Español](README.md)** · [English](README.en.md) · [Русский](README.ru.md) · [中文](README.zh.md)
+
 # 📋 Agenda
 
 Agenda personal multiplataforma hecha con Flutter: calendario, tareas en formato Kanban, notas, marcadores, contraseñas cifradas, Pomodoro, plantillas y sincronización entre dispositivos vía GitHub Gist privado.
@@ -6,7 +10,18 @@ Agenda personal multiplataforma hecha con Flutter: calendario, tareas en formato
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Build & Release](https://github.com/linuxesdios/agenda/actions/workflows/release.yml/badge.svg)](https://github.com/linuxesdios/agenda/actions/workflows/release.yml)
 [![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.12-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Android%20%7C%20Linux-informational)](#compilar-desde-el-c%C3%B3digo-fuente)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Android%20%7C%20Linux-informational)](#-compilar-desde-el-código-fuente)
+
+</div>
+
+## 🖼️ Capturas
+
+<p align="center">
+  <img src="docs/screenshots/demo_claro.png" alt="Pantalla principal, modo claro" width="49%">
+  <img src="docs/screenshots/demo_oscuro.png" alt="Pantalla principal, modo oscuro" width="49%">
+</p>
+
+> Datos de ejemplo genéricos — ninguna captura de este repo corresponde a datos reales de un usuario.
 
 ## ✨ Funcionalidades
 
@@ -19,8 +34,9 @@ Agenda personal multiplataforma hecha con Flutter: calendario, tareas en formato
 - 🧩 Plantillas y listas personalizadas
 - ☁️ Sincronización entre dispositivos vía GitHub Gist privado
 - 🔔 Notificaciones locales programadas
-- 🖥️ Widget de pantalla de inicio en Android
+- 🖥️ Widget de pantalla de inicio en Android (con modo oscuro propio)
 - 🌗 Modo oscuro, paletas de color e idioma configurables
+- 🌍 Interfaz en Español, English, Русский y 中文
 
 ## 📂 Estructura del proyecto
 
@@ -29,6 +45,7 @@ Es un único proyecto Flutter: todo el código de la aplicación vive en [lib/](
 ```
 lib/
 ├── main.dart          # arranque, tema, ciclo de vida de ventana
+├── i18n/               # diccionario de traducciones y helpers de idioma
 ├── modelos/           # entidades de datos (Cita, Tarea, Configuracion, ...)
 ├── estado/            # estado global de la app (Provider/ChangeNotifier)
 ├── repositorios/      # persistencia (SQLite y JSON) y su interfaz común
@@ -116,7 +133,7 @@ Esto dispara `.github/workflows/release.yml`, que compila las 3 plataformas y pu
 
 ## 🌍 Idiomas
 
-La app detecta el idioma del sistema en el primer arranque y permite cambiarlo desde Ajustes. Idiomas disponibles: Español, English, Русский, 中文.
+La app detecta el idioma del sistema en el primer arranque y permite cambiarlo desde Ajustes → Apariencia. Idiomas disponibles: Español, English, Русский, 中文.
 
 ## 📄 Licencia
 

@@ -89,6 +89,7 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
       'icono_app': "TEXT DEFAULT '📋'",
       'frases': "TEXT DEFAULT ''",
       'resumen_diario': 'INTEGER DEFAULT 1',
+      'idioma': 'TEXT',
     };
     for (final e in requeridas.entries) {
       if (!nombres.contains(e.key)) {
@@ -112,6 +113,7 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
       'icono_app': "TEXT DEFAULT '📋'",
       'frases': "TEXT DEFAULT ''",
       'resumen_diario': 'INTEGER DEFAULT 1',
+      'idioma': 'TEXT',
     };
     for (final entry in columnasRequeridas.entries) {
       if (!nombres.contains(entry.key)) {
@@ -154,7 +156,8 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         tamano_letra REAL DEFAULT 14,
         icono_app TEXT DEFAULT '📋',
         frases TEXT DEFAULT '',
-        resumen_diario INTEGER DEFAULT 1
+        resumen_diario INTEGER DEFAULT 1,
+        idioma TEXT
       )
     ''');
 
@@ -305,6 +308,7 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         iconoApp: r['icono_app'] as String? ?? '📋',
         frases: r['frases'] as String? ?? '',
         resumenDiario: (r['resumen_diario'] as int? ?? 1) == 1,
+        idioma: r['idioma'] as String?,
       );
     } else {
       config = Configuracion(dispositivoNombre: dispositivoId);
@@ -501,6 +505,7 @@ class AlmacenamientoSqlite implements AlmacenamientoRepository {
         'icono_app': c.iconoApp,
         'frases': c.frases,
         'resumen_diario': c.resumenDiario ? 1 : 0,
+        'idioma': c.idioma,
       });
 
       // ── Limpiar datos compartidos ──
